@@ -9,7 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'standalone',
+  output: 'export',
+  basePath: '/Naturalization-Test-Quiz',
+  assetPrefix: '/Naturalization-Test-Quiz/',
   experimental: {
     serverActions: true
   }

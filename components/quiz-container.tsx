@@ -87,7 +87,7 @@ export function QuizContainer() {
       moveToPreviousQuestion()
     } else if (normalizedCommand.includes("stop") || normalizedCommand.includes("quit")) {
       speechService?.stopListening()
-      setIsListening(false)
+        setIsListening(false)
     } else if (!normalizedCommand.includes("repeat") && !normalizedCommand.includes("say again")) {
       checkAnswer(normalizedCommand)
     }
@@ -285,13 +285,13 @@ export function QuizContainer() {
   }, [currentQuestion, currentQuestionIndex, score, answeredQuestions])
 
   const moveToNextQuestion = useCallback(() => {
-    let nextIndex = (currentQuestionIndex + 1) % naturalizationQuestions.length
+        let nextIndex = (currentQuestionIndex + 1) % naturalizationQuestions.length
     while (answeredQuestions.has(nextIndex)) {
-      nextIndex = (nextIndex + 1) % naturalizationQuestions.length
-    }
-    setCurrentQuestionIndex(nextIndex)
-    setFeedback(null)
-    setTranscript("")
+          nextIndex = (nextIndex + 1) % naturalizationQuestions.length
+        }
+        setCurrentQuestionIndex(nextIndex)
+        setFeedback(null)
+        setTranscript("")
     setInterimTranscript("")
   }, [currentQuestionIndex, answeredQuestions])
 
@@ -712,26 +712,26 @@ export function QuizContainer() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={toggleListening}
-                  size="lg"
-                  variant={isListening ? "destructive" : "default"}
-                  className={cn(
-                    "h-16 w-16 rounded-full flex items-center justify-center transition-all",
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={toggleListening}
+                    size="lg"
+                    variant={isListening ? "destructive" : "default"}
+                    className={cn(
+                      "h-16 w-16 rounded-full flex items-center justify-center transition-all",
                     isListening && "animate-pulse"
-                  )}
-                >
-                  {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
+                    )}
+                  >
+                    {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
                 <p>{isListening ? "Click to stop listening" : "Click to start listening"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
         </CardFooter>
       </Card>
     </div>

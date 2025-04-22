@@ -7,6 +7,9 @@ const nextConfig = {
     },
     assetPrefix: process.env.NODE_ENV === 'production' ? '/Naturalization-Test-Quiz/' : '',
     basePath: process.env.NODE_ENV === 'production' ? '/Naturalization-Test-Quiz' : '',
+    trailingSlash: true,
+    distDir: 'out',
+    reactStrictMode: true
 }
 
 module.exports = nextConfig 

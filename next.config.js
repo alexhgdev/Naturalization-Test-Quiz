@@ -5,6 +5,11 @@ const nextConfig = {
         unoptimized: true,
     },
     basePath: '/naturalization-quiz',
+    experimental: {
+        missingSuspenseWithCSRError: false,
+    },
+    skipMiddlewareUrlNormalize: true,
+    skipTrailingSlashRedirect: true,
 }
 
 module.exports = nextConfig 

@@ -6,8 +6,12 @@ const nextConfig = {
     },
     basePath: '/naturalization-quiz',
     assetPrefix: '/naturalization-quiz/',
+    trailingSlash: true,
     skipMiddlewareUrlNormalize: true,
     skipTrailingSlashRedirect: true,
+    experimental: {
+        optimizeCss: true,
+    }
 }
 
 module.exports = nextConfig 

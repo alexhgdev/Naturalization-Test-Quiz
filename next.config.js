@@ -5,9 +5,7 @@ const nextConfig = {
         unoptimized: true,
     },
     basePath: '/naturalization-quiz',
-    experimental: {
-        missingSuspenseWithCSRError: false,
-    },
+    assetPrefix: '/naturalization-quiz/',
     skipMiddlewareUrlNormalize: true,
     skipTrailingSlashRedirect: true,
 }

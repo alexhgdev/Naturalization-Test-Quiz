@@ -9,12 +9,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'export',
-  basePath: '/Naturalization-Test-Quiz',
-  assetPrefix: '/Naturalization-Test-Quiz/',
   experimental: {
     serverActions: true
-  }
+  },
+  assetPrefix: ''
 }
 
 export default nextConfig

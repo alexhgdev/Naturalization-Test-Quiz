@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { cn } from '@/lib/utils'
+import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
   title: 'Naturalization Quiz',
@@ -22,7 +23,13 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased")}>
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

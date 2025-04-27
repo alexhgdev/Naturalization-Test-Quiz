@@ -7,629 +7,417 @@ export interface Question {
 
 export const naturalizationQuestions: Question[] = [
   {
-    question: "What is the supreme law of the land?",
-    answer: "the Constitution",
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What does the Constitution do?",
-    answer: ["sets up the government", "defines the government", "protects basic rights of Americans"],
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "The idea of self-government is in the first three words of the Constitution. What are these words?",
-    answer: "We the People",
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What is an amendment?",
-    answer: ["a change (to the Constitution)", "an addition (to the Constitution)"],
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What do we call the first ten amendments to the Constitution?",
-    answer: "the Bill of Rights",
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What is one right or freedom from the First Amendment?",
-    answer: ["speech", "religion", "assembly", "press", "petition the government"],
-    category: "Principles of American Democracy",
-    isAsterisked: true
-  },
-  {
-    question: "How many amendments does the Constitution have?",
-    answer: "twenty-seven (27)",
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What did the Declaration of Independence do?",
-    answer: ["announced our independence (from Great Britain)", "declared our independence (from Great Britain)", "said that the United States is free (from Great Britain)"],
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What are two rights in the Declaration of Independence?",
-    answer: ["life", "liberty", "pursuit of happiness"],
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What is freedom of religion?",
-    answer: "You can practice any religion, or not practice a religion.",
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "What is the economic system in the United States?",
-    answer: ["capitalist economy", "market economy"],
-    category: "Principles of American Democracy",
-    isAsterisked: true
-  },
-  {
-    question: "What is the 'rule of law'?",
-    answer: ["Everyone must follow the law.", "Leaders must obey the law.", "Government must obey the law.", "No one is above the law."],
-    category: "Principles of American Democracy"
-  },
-  {
-    question: "Name one branch or part of the government.",
-    answer: ["Congress", "legislative", "President", "executive", "the courts", "judicial"],
-    category: "System of Government",
-    isAsterisked: true
-  },
-  {
-    question: "What stops one branch of government from becoming too powerful?",
-    answer: ["checks and balances", "separation of powers"],
-    category: "System of Government"
-  },
-  {
-    question: "Who is in charge of the executive branch?",
-    answer: "the President",
-    category: "System of Government"
-  },
-  {
-    question: "Who makes federal laws?",
-    answer: ["Congress", "Senate and House (of Representatives)", "(U.S. or national) legislature"],
-    category: "System of Government"
-  },
-  {
-    question: "What are the two parts of the U.S. Congress?",
-    answer: "the Senate and House (of Representatives)",
-    category: "System of Government",
-    isAsterisked: true
-  },
-  {
-    question: "How many U.S. Senators are there?",
-    answer: "one hundred (100)",
-    category: "System of Government"
-  },
-  {
-    question: "We elect a U.S. Senator for how many years?",
-    answer: "six (6)",
-    category: "System of Government"
-  },
-  {
-    question: "The House of Representatives has how many voting members?",
-    answer: "four hundred thirty-five (435)",
-    category: "System of Government"
-  },
-  {
     question: "We elect a U.S. Representative for how many years?",
-    answer: "two (2)",
+    answer: ["Two (2)", "Four (4)", "Six (6)", "Eight (8)"],
     category: "System of Government"
   },
   {
     question: "Who does a U.S. Senator represent?",
-    answer: "all people of the state",
+    answer: ["All people of the state", "Only people who voted for them", "State legislature", "The Governor"],
     category: "System of Government"
   },
   {
     question: "Why do some states have more Representatives than other states?",
-    answer: ["(because of) the state's population", "(because) they have more people", "(because) some states have more people"],
+    answer: ["Because of the state's population", "Because of the state's land area", "Because of the state's wealth", "Because of the state's location"],
     category: "System of Government"
   },
   {
     question: "We elect a President for how many years?",
-    answer: "four (4)",
+    answer: ["Four (4)", "Two (2)", "Six (6)", "Eight (8)"],
     category: "System of Government"
   },
   {
     question: "In what month do we vote for President?",
-    answer: "November",
-    category: "System of Government",
-    isAsterisked: true
+    answer: ["November", "December", "January", "October"],
+    category: "System of Government"
   },
   {
     question: "If the President can no longer serve, who becomes President?",
-    answer: "the Vice President",
+    answer: ["The Vice President", "The Speaker of the House", "The Secretary of State", "The Chief Justice"],
     category: "System of Government"
   },
   {
     question: "If both the President and the Vice President can no longer serve, who becomes President?",
-    answer: "the Speaker of the House",
+    answer: ["The Speaker of the House", "The Secretary of Defense", "The Attorney General", "The Chief Justice"],
     category: "System of Government"
   },
   {
     question: "Who is the Commander in Chief of the military?",
-    answer: "the President",
+    answer: ["The President", "The Vice President", "The Secretary of Defense", "The Speaker of the House"],
     category: "System of Government"
   },
   {
     question: "Who signs bills to become laws?",
-    answer: "the President",
+    answer: ["The President", "The Vice President", "The Chief Justice", "The Speaker of the House"],
     category: "System of Government"
   },
   {
     question: "Who vetoes bills?",
-    answer: "the President",
+    answer: ["The President", "The Vice President", "The Chief Justice", "The Speaker of the House"],
     category: "System of Government"
   },
   {
     question: "What does the President's Cabinet do?",
-    answer: "advises the President",
+    answer: ["Advises the President", "Passes laws", "Leads the Senate", "Appoints Supreme Court Justices"],
     category: "System of Government"
   },
   {
     question: "What are two Cabinet-level positions?",
-    answer: [
-      "Secretary of Agriculture",
-      "Secretary of Commerce",
-      "Secretary of Defense",
-      "Secretary of Education",
-      "Secretary of Energy",
-      "Secretary of Health and Human Services",
-      "Secretary of Homeland Security",
-      "Secretary of Housing and Urban Development",
-      "Secretary of the Interior",
-      "Secretary of Labor",
-      "Secretary of State",
-      "Secretary of Transportation",
-      "Secretary of the Treasury",
-      "Secretary of Veterans Affairs",
-      "Attorney General",
-      "Vice President"
-    ],
+    answer: ["Secretary of State and Secretary of Labor", "Governor and Mayor", "Chief Justice and Speaker of the House", "Ambassador and General"],
     category: "System of Government"
   },
   {
     question: "What does the judicial branch do?",
-    answer: [
-      "reviews laws",
-      "explains laws",
-      "resolves disputes (disagreements)",
-      "decides if a law goes against the Constitution"
-    ],
+    answer: ["Reviews laws", "Passes laws", "Enforces laws", "Writes new laws"],
     category: "System of Government"
   },
   {
     question: "What is the highest court in the United States?",
-    answer: "the Supreme Court",
+    answer: ["The Supreme Court", "The Federal Court", "The Court of Appeals", "The District Court"],
     category: "System of Government"
   },
   {
     question: "Under our Constitution, some powers belong to the federal government. What is one power of the federal government?",
-    answer: ["to print money", "to declare war", "to create an army", "to make treaties"],
+    answer: ["To print money", "To establish schools", "To issue driver's licenses", "To approve zoning and land use"],
     category: "System of Government"
   },
   {
     question: "Under our Constitution, some powers belong to the states. What is one power of the states?",
-    answer: [
-      "provide schooling and education",
-      "provide protection (police)",
-      "provide safety (fire departments)",
-      "give a driver's license",
-      "approve zoning and land use"
-    ],
+    answer: ["Provide schooling and education", "Print money", "Declare war", "Make treaties"],
     category: "System of Government"
   },
   {
     question: "What are the two major political parties in the United States?",
-    answer: ["Democratic and Republican"],
-    category: "System of Government",
-    isAsterisked: true
+    answer: ["Democratic and Republican", "Democratic and Libertarian", "Republican and Green", "Libertarian and Constitution"],
+    category: "System of Government"
+  },
+  {
+    question: "What is the political party of the President now?",
+    answer: ["Answers will vary", "Independent", "Libertarian", "Green Party"],
+    category: "System of Government"
+  },
+  {
+    question: "What is the name of the Speaker of the House of Representatives now?",
+    answer: ["Answers will vary", "Vice President", "Attorney General", "Chief Justice"],
+    category: "System of Government"
   },
   {
     question: "There are four amendments to the Constitution about who can vote. Describe one of them.",
-    answer: [
-      "Citizens eighteen (18) and older (can vote).",
-      "You don't have to pay (a poll tax) to vote.",
-      "Any citizen can vote. (Women and men can vote.)",
-      "A male citizen of any race (can vote)."
-    ],
+    answer: ["Citizens 18 and older can vote", "Citizens 21 and older can vote", "Only landowners can vote", "Voting is required"],
     category: "Rights and Responsibilities"
   },
   {
     question: "What is one responsibility that is only for United States citizens?",
-    answer: ["serve on a jury", "vote in a federal election"],
-    category: "Rights and Responsibilities",
-    isAsterisked: true
+    answer: ["Serve on a jury", "Pay taxes", "Attend school", "Serve in the military"],
+    category: "Rights and Responsibilities"
   },
   {
     question: "Name one right only for United States citizens.",
-    answer: ["vote in a federal election", "run for federal office"],
+    answer: ["Vote in a federal election", "Freedom of religion", "Freedom of speech", "Right to privacy"],
     category: "Rights and Responsibilities"
   },
   {
     question: "What are two rights of everyone living in the United States?",
-    answer: [
-      "freedom of expression",
-      "freedom of speech",
-      "freedom of assembly",
-      "freedom to petition the government",
-      "freedom of religion",
-      "the right to bear arms"
-    ],
+    answer: ["Freedom of speech and freedom of religion", "Freedom to drive and freedom to travel", "Freedom of employment and freedom of healthcare", "Freedom of taxation and freedom of education"],
     category: "Rights and Responsibilities"
   },
   {
     question: "What do we show loyalty to when we say the Pledge of Allegiance?",
-    answer: ["the United States", "the flag"],
+    answer: ["The United States", "The President", "The Congress", "The Supreme Court"],
     category: "Rights and Responsibilities"
   },
   {
     question: "What is one promise you make when you become a United States citizen?",
-    answer: [
-      "give up loyalty to other countries",
-      "defend the Constitution and laws of the United States",
-      "obey the laws of the United States",
-      "serve in the U.S. military (if needed)",
-      "serve (do important work for) the nation (if needed)",
-      "be loyal to the United States"
-    ],
+    answer: ["Give up loyalty to other countries", "Serve on the Supreme Court", "Travel outside the United States", "Run for President"],
     category: "Rights and Responsibilities"
   },
   {
     question: "How old do citizens have to be to vote for President?",
-    answer: "eighteen (18) and older",
-    category: "Rights and Responsibilities",
-    isAsterisked: true
+    answer: ["Eighteen (18) and older", "Sixteen (16) and older", "Twenty-one (21) and older", "Seventeen (17) and older"],
+    category: "Rights and Responsibilities"
   },
   {
     question: "What are two ways that Americans can participate in their democracy?",
-    answer: [
-      "vote",
-      "join a political party",
-      "help with a campaign",
-      "join a civic group",
-      "join a community group",
-      "give an elected official your opinion on an issue",
-      "call Senators and Representatives",
-      "publicly support or oppose an issue or policy",
-      "run for office",
-      "write to a newspaper"
-    ],
+    answer: ["Vote and join a civic group", "Work for the federal government and move to another country", "Travel abroad and attend college", "Pay taxes and serve in the military"],
     category: "Rights and Responsibilities"
   },
   {
     question: "When is the last day you can send in federal income tax forms?",
-    answer: "April 15",
-    category: "Rights and Responsibilities",
-    isAsterisked: true
+    answer: ["April 15", "March 1", "December 31", "January 15"],
+    category: "Rights and Responsibilities"
   },
   {
     question: "When must all men register for the Selective Service?",
-    answer: ["at age eighteen (18)", "between eighteen (18) and twenty-six (26)"],
+    answer: ["At age 18", "At age 21", "At age 16", "At age 25"],
     category: "Rights and Responsibilities"
   },
   {
     question: "What is one reason colonists came to America?",
-    answer: [
-      "freedom",
-      "political liberty",
-      "religious freedom",
-      "economic opportunity",
-      "practice their religion",
-      "escape persecution"
-    ],
+    answer: ["Freedom", "To escape taxes", "To join the army", "To become kings"],
     category: "Colonial Period and Independence"
   },
   {
     question: "Who lived in America before the Europeans arrived?",
-    answer: ["American Indians", "Native Americans"],
+    answer: ["American Indians", "Spanish settlers", "Pilgrims", "French trappers"],
     category: "Colonial Period and Independence"
   },
   {
     question: "What group of people was taken to America and sold as slaves?",
-    answer: ["Africans", "people from Africa"],
+    answer: ["Africans", "Asians", "Europeans", "Native Americans"],
     category: "Colonial Period and Independence"
   },
   {
     question: "Why did the colonists fight the British?",
-    answer: [
-      "because of high taxes (taxation without representation)",
-      "because the British army stayed in their houses (boarding, quartering)",
-      "because they didn't have self-government"
-    ],
+    answer: ["Because of high taxes", "Because of religious freedom", "Because of the gold rush", "Because of territorial expansion"],
     category: "Colonial Period and Independence"
   },
   {
     question: "Who wrote the Declaration of Independence?",
-    answer: "(Thomas) Jefferson",
+    answer: ["Thomas Jefferson", "George Washington", "James Madison", "John Adams"],
     category: "Colonial Period and Independence"
   },
   {
     question: "When was the Declaration of Independence adopted?",
-    answer: "July 4, 1776",
+    answer: ["July 4, 1776", "September 17, 1787", "December 25, 1776", "November 11, 1775"],
     category: "Colonial Period and Independence"
   },
   {
     question: "There were 13 original states. Name three.",
-    answer: [
-      "New Hampshire",
-      "Massachusetts",
-      "Rhode Island",
-      "Connecticut",
-      "New York",
-      "New Jersey",
-      "Pennsylvania",
-      "Delaware",
-      "Maryland",
-      "Virginia",
-      "North Carolina",
-      "South Carolina",
-      "Georgia"
-    ],
+    answer: ["New York, Virginia, Georgia", "Ohio, Texas, Florida", "California, Nevada, Oregon", "Illinois, Michigan, Wisconsin"],
     category: "Colonial Period and Independence"
   },
   {
     question: "What happened at the Constitutional Convention?",
-    answer: ["The Constitution was written.", "The Founding Fathers wrote the Constitution."],
+    answer: ["The Constitution was written", "The Declaration of Independence was signed", "The Articles of Confederation were abolished", "The Louisiana Purchase was made"],
     category: "Colonial Period and Independence"
   },
   {
     question: "When was the Constitution written?",
-    answer: "1787",
+    answer: ["1787", "1776", "1801", "1791"],
     category: "Colonial Period and Independence"
   },
   {
     question: "The Federalist Papers supported the passage of the U.S. Constitution. Name one of the writers.",
-    answer: ["(James) Madison", "(Alexander) Hamilton", "(John) Jay", "Publius"],
+    answer: ["James Madison", "Thomas Jefferson", "George Washington", "Abraham Lincoln"],
     category: "Colonial Period and Independence"
   },
   {
     question: "What is one thing Benjamin Franklin is famous for?",
-    answer: [
-      "U.S. diplomat",
-      "oldest member of the Constitutional Convention",
-      "first Postmaster General of the United States",
-      "writer of 'Poor Richard's Almanac'",
-      "started the first free libraries"
-    ],
+    answer: ["U.S. diplomat", "First U.S. President", "First Secretary of State", "Author of the Constitution"],
     category: "Colonial Period and Independence"
   },
   {
     question: "Who is the 'Father of Our Country'?",
-    answer: "(George) Washington",
+    answer: ["George Washington", "Thomas Jefferson", "James Madison", "Benjamin Franklin"],
     category: "Colonial Period and Independence"
   },
   {
     question: "Who was the first President?",
-    answer: "(George) Washington",
-    category: "Colonial Period and Independence",
-    isAsterisked: true
+    answer: ["George Washington", "John Adams", "Thomas Jefferson", "James Monroe"],
+    category: "Colonial Period and Independence"
   },
   {
     question: "What territory did the United States buy from France in 1803?",
-    answer: ["the Louisiana Territory", "Louisiana"],
+    answer: ["The Louisiana Territory", "Florida", "Texas", "California"],
     category: "1800s"
   },
   {
     question: "Name one war fought by the United States in the 1800s.",
-    answer: ["War of 1812", "Mexican-American War", "Civil War", "Spanish-American War"],
+    answer: ["Civil War", "World War I", "Korean War", "Vietnam War"],
     category: "1800s"
   },
   {
     question: "Name the U.S. war between the North and the South.",
-    answer: ["the Civil War", "the War between the States"],
+    answer: ["The Civil War", "The Revolutionary War", "The Mexican-American War", "The Spanish-American War"],
     category: "1800s"
   },
   {
     question: "Name one problem that led to the Civil War.",
-    answer: ["slavery", "economic reasons", "states' rights"],
+    answer: ["Slavery", "Trade with Europe", "Immigration", "States joining the Union"],
     category: "1800s"
   },
   {
     question: "What was one important thing that Abraham Lincoln did?",
-    answer: [
-      "freed the slaves (Emancipation Proclamation)",
-      "saved (or preserved) the Union",
-      "led the United States during the Civil War"
-    ],
-    category: "1800s",
-    isAsterisked: true
+    answer: ["Freed the slaves", "Discovered America", "Signed the Constitution", "Led the American Revolution"],
+    category: "1800s"
   },
   {
     question: "What did the Emancipation Proclamation do?",
-    answer: [
-      "freed the slaves",
-      "freed slaves in the Confederacy",
-      "freed slaves in the Confederate states",
-      "freed slaves in most Southern states"
-    ],
+    answer: ["Freed the slaves", "Declared war on Britain", "Established the Supreme Court", "Created the first U.S. bank"],
     category: "1800s"
   },
   {
     question: "What did Susan B. Anthony do?",
-    answer: ["fought for women's rights", "fought for civil rights"],
+    answer: ["Fought for women's rights", "Became the first female President", "Led troops in the Civil War", "Wrote the Federalist Papers"],
     category: "1800s"
   },
   {
     question: "Name one war fought by the United States in the 1900s.",
-    answer: ["World War I", "World War II", "Korean War", "Vietnam War", "(Persian) Gulf War"],
-    category: "Recent American History",
-    isAsterisked: true
+    answer: ["World War II", "Civil War", "Revolutionary War", "Mexican-American War"],
+    category: "Recent American History"
   },
   {
     question: "Who was President during World War I?",
-    answer: "(Woodrow) Wilson",
+    answer: ["Woodrow Wilson", "Franklin Roosevelt", "Harry Truman", "Dwight Eisenhower"],
     category: "Recent American History"
   },
   {
     question: "Who was President during the Great Depression and World War II?",
-    answer: "(Franklin) Roosevelt",
+    answer: ["Franklin Roosevelt", "Herbert Hoover", "Woodrow Wilson", "John F. Kennedy"],
     category: "Recent American History"
   },
   {
     question: "Who did the United States fight in World War II?",
-    answer: "Japan, Germany, and Italy",
+    answer: ["Japan, Germany, and Italy", "China, Germany, and Russia", "Spain, Germany, and Italy", "Japan, Russia, and Italy"],
     category: "Recent American History"
   },
   {
     question: "Before he was President, Eisenhower was a general. What war was he in?",
-    answer: "World War II",
+    answer: ["World War II", "World War I", "Vietnam War", "Korean War"],
     category: "Recent American History"
   },
   {
     question: "During the Cold War, what was the main concern of the United States?",
-    answer: "Communism",
+    answer: ["Communism", "Fascism", "Monarchy", "Colonialism"],
     category: "Recent American History"
   },
   {
     question: "What movement tried to end racial discrimination?",
-    answer: "civil rights (movement)",
+    answer: ["Civil Rights Movement", "Women's Suffrage Movement", "Temperance Movement", "Labor Movement"],
     category: "Recent American History"
   },
   {
     question: "What did Martin Luther King, Jr. do?",
-    answer: ["fought for civil rights", "worked for equality for all Americans"],
-    category: "Recent American History",
-    isAsterisked: true
+    answer: ["Fought for civil rights", "Became a U.S. President", "Wrote the Constitution", "Fought in World War II"],
+    category: "Recent American History"
   },
   {
     question: "What major event happened on September 11, 2001, in the United States?",
-    answer: "Terrorists attacked the United States.",
+    answer: ["Terrorists attacked the United States", "The stock market crashed", "The Great Depression began", "The Civil Rights Act was signed"],
     category: "Recent American History"
   },
   {
     question: "Name one American Indian tribe in the United States.",
-    answer: [
-      "Cherokee",
-      "Navajo",
-      "Sioux",
-      "Chippewa",
-      "Choctaw",
-      "Pueblo",
-      "Apache",
-      "Iroquois",
-      "Creek",
-      "Blackfeet",
-      "Seminole",
-      "Cheyenne",
-      "Arawak",
-      "Shawnee",
-      "Mohegan",
-      "Huron",
-      "Oneida",
-      "Lakota",
-      "Crow",
-      "Teton",
-      "Hopi",
-      "Inuit"
-    ],
+    answer: ["Cherokee", "Aztec", "Incan", "Mayan"],
     category: "Recent American History"
   },
   {
     question: "Name one of the two longest rivers in the United States.",
-    answer: ["Missouri (River)", "Mississippi (River)"],
+    answer: ["Mississippi River", "Colorado River", "Columbia River", "Snake River"],
     category: "Geography"
   },
   {
     question: "What ocean is on the West Coast of the United States?",
-    answer: "Pacific (Ocean)",
+    answer: ["Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean"],
     category: "Geography"
   },
   {
     question: "What ocean is on the East Coast of the United States?",
-    answer: "Atlantic (Ocean)",
+    answer: ["Atlantic Ocean", "Pacific Ocean", "Indian Ocean", "Arctic Ocean"],
     category: "Geography"
   },
   {
     question: "Name one U.S. territory.",
-    answer: [
-      "Puerto Rico",
-      "U.S. Virgin Islands",
-      "American Samoa",
-      "Northern Mariana Islands",
-      "Guam"
-    ],
+    answer: ["Puerto Rico", "Bermuda", "Bahamas", "Greenland"],
     category: "Geography"
   },
   {
     question: "Name one state that borders Canada.",
-    answer: [
-      "Maine",
-      "New Hampshire",
-      "Vermont",
-      "New York",
-      "Pennsylvania",
-      "Ohio",
-      "Michigan",
-      "Minnesota",
-      "North Dakota",
-      "Montana",
-      "Idaho",
-      "Washington",
-      "Alaska"
-    ],
+    answer: ["Michigan", "California", "Florida", "Nevada"],
     category: "Geography"
   },
   {
     question: "Name one state that borders Mexico.",
-    answer: ["California", "Arizona", "New Mexico", "Texas"],
+    answer: ["Texas", "Nevada", "Florida", "Arkansas"],
     category: "Geography"
   },
   {
     question: "What is the capital of the United States?",
-    answer: "Washington, D.C.",
-    category: "Geography",
-    isAsterisked: true
+    answer: ["Washington, D.C.", "New York City", "Philadelphia", "Boston"],
+    category: "Geography"
   },
   {
     question: "Where is the Statue of Liberty?",
-    answer: ["New York (Harbor)", "Liberty Island"],
-    category: "Geography",
-    isAsterisked: true
+    answer: ["New York Harbor", "Boston Harbor", "San Francisco Bay", "Miami Beach"],
+    category: "Geography"
   },
   {
     question: "Why does the flag have 13 stripes?",
-    answer: [
-      "because there were 13 original colonies",
-      "because the stripes represent the original colonies"
-    ],
+    answer: ["Because there were 13 original colonies", "Because there are 13 states", "Because there are 13 branches of government", "Because of 13 presidents"],
     category: "Symbols"
   },
   {
     question: "Why does the flag have 50 stars?",
-    answer: [
-      "because there is one star for each state",
-      "because each star represents a state",
-      "because there are 50 states"
-    ],
-    category: "Symbols",
-    isAsterisked: true
+    answer: ["Because there is one star for each state", "Because there are 50 founding fathers", "Because there are 50 government departments", "Because of 50 amendments"],
+    category: "Symbols"
   },
   {
     question: "What is the name of the national anthem?",
-    answer: "The Star-Spangled Banner",
+    answer: ["The Star-Spangled Banner", "America the Beautiful", "God Bless America", "Yankee Doodle"],
     category: "Symbols"
   },
   {
     question: "When do we celebrate Independence Day?",
-    answer: "July 4",
-    category: "Holidays",
-    isAsterisked: true
+    answer: ["July 4", "January 1", "September 17", "November 11"],
+    category: "Holidays"
   },
   {
     question: "Name two national U.S. holidays.",
-    answer: [
-      "New Year's Day",
-      "Martin Luther King, Jr. Day",
-      "Presidents' Day",
-      "Memorial Day",
-      "Independence Day",
-      "Labor Day",
-      "Columbus Day",
-      "Veterans Day",
-      "Thanksgiving",
-      "Christmas"
-    ],
+    answer: ["Thanksgiving and Independence Day", "Halloween and Flag Day", "Valentine's Day and Labor Day", "Mother's Day and Columbus Day"],
     category: "Holidays"
+  },
+  {
+    question: "What is the name of the current President of the United States?",
+    answer: ["Answers will vary", "Donald Trump", "Barack Obama", "George Bush"],
+    category: "System of Government"
+  },
+  {
+    question: "What is the name of the current Vice President of the United States?",
+    answer: ["Answers will vary", "Mike Pence", "Kamala Harris", "Mitt Romney"],
+    category: "System of Government"
+  },
+  {
+    question: "What are two rights mentioned in the First Amendment?",
+    answer: ["Freedom of speech and freedom of religion", "Right to bear arms and freedom of travel", "Freedom of employment and freedom of education", "Freedom to vote and freedom to own land"],
+    category: "Rights and Responsibilities"
+  },
+  {
+    question: "Who is considered the principal author of the U.S. Constitution?",
+    answer: ["James Madison", "George Washington", "Thomas Jefferson", "Benjamin Franklin"],
+    category: "Colonial Period and Independence"
+  },
+  {
+    question: "What does the Bill of Rights protect?",
+    answer: ["Individual liberties and rights", "The government's power", "Military leadership", "State sovereignty only"],
+    category: "Principles of American Democracy"
+  },
+  {
+    question: "What is one thing the U.S. Constitution does?",
+    answer: ["Sets up the government", "Declares war", "Collects taxes", "Prints money"],
+    category: "Principles of American Democracy"
+  },
+  {
+    question: "Who is one of your state's U.S. Senators now?",
+    answer: ["Answers will vary", "Nancy Pelosi", "Mike Pence", "John Roberts"],
+    category: "System of Government"
+  },
+  {
+    question: "How many justices are currently on the Supreme Court?",
+    answer: ["Nine (9)", "Seven (7)", "Eleven (11)", "Eight (8)"],
+    category: "System of Government"
+  },
+  {
+    question: "Name one responsibility of citizenship in the United States.",
+    answer: ["Vote in elections", "Serve as President", "Travel internationally", "Buy property"],
+    category: "Rights and Responsibilities"
+  },
+  {
+    question: "Who is known as the \"Father of the Constitution\"?",
+    answer: ["James Madison", "Thomas Jefferson", "George Washington", "Alexander Hamilton"],
+    category: "Colonial Period and Independence"
   }
-]
+];
+
+
+
+

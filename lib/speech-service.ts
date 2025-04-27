@@ -47,9 +47,14 @@ export class SpeechService {
         private onError: (error: string) => void,
         private onInterimTranscript: (text: string) => void
     ) {
-        if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
-            this.recognition = new (window as any).webkitSpeechRecognition()
-            this.setupRecognition()
+        if (typeof window !== "undefined") {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+            if (SpeechRecognition) {
+                this.recognition = new SpeechRecognition()
+                this.setupRecognition()
+            } else {
+                this.onError("Speech recognition is not supported in this browser. Please use Chrome or Edge.")
+            }
         }
     }
 
@@ -61,8 +66,8 @@ export class SpeechService {
         this.recognition.interimResults = true
         this.recognition.lang = "en-US"
 
-        // Set confidence threshold for better accuracy
-        const confidenceThreshold = 0.7
+        // Lower confidence threshold for better sensitivity
+        const confidenceThreshold = 0.3
 
         this.recognition.onresult = (event: SpeechRecognitionEvent) => {
             let interimTranscript = ""
@@ -74,7 +79,7 @@ export class SpeechService {
                 const transcript = result[0].transcript
                 const confidence = (result[0] as any).confidence || 1.0
 
-                // Only process results with sufficient confidence
+                // Process results with lower confidence threshold
                 if (confidence >= confidenceThreshold) {
                     if (result.isFinal) {
                         finalTranscript += transcript
@@ -98,6 +103,10 @@ export class SpeechService {
         this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
             if (event.error === "no-speech") {
                 // Ignore no-speech errors as they're common during pauses
+                return
+            }
+            if (event.error === "not-allowed") {
+                this.onError("Microphone access was denied. Please allow microphone access and try again.")
                 return
             }
             this.onError(`Speech recognition error: ${event.error}`)
@@ -146,7 +155,7 @@ export class SpeechService {
                 this.recognition.start()
                 this.isListening = true
             } catch (error) {
-                this.onError("Failed to start speech recognition")
+                this.onError("Failed to start speech recognition. Please try again.")
             }
         }
     }

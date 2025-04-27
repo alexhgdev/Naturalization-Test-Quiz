@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useToast } from "@/components/ui/use-toast"
-import { Mic, MicOff, Volume2, CheckCircle2, XCircle, Settings, HelpCircle } from "lucide-react"
+import { Mic, MicOff, Volume2, CheckCircle2, XCircle, Settings, HelpCircle, RotateCcw, Shuffle } from "lucide-react"
 import { QuestionDisplay } from "@/components/question-display"
 import { ResultsSummary } from "@/components/results-summary"
 import { Question, naturalizationQuestions } from '@/data/questions'
@@ -26,10 +26,11 @@ export function QuizContainer() {
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set())
   const [speechService, setSpeechService] = useState<SpeechService | null>(null)
   const [currentOptions, setCurrentOptions] = useState<string[]>([])
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(naturalizationQuestions)
   const { toast } = useToast()
 
-  const currentQuestion = naturalizationQuestions[currentQuestionIndex]
-  const progress = (answeredQuestions.size / naturalizationQuestions.length) * 100
+  const currentQuestion = shuffledQuestions[currentQuestionIndex]
+  const progress = (answeredQuestions.size / shuffledQuestions.length) * 100
 
   const handleTranscript = useCallback((text: string) => {
     setTranscript(text)
@@ -102,7 +103,7 @@ export function QuizContainer() {
       setTimeout(() => {
         setCurrentQuestionIndex(prev => {
           const nextIndex = prev + 1
-          if (nextIndex >= naturalizationQuestions.length) {
+          if (nextIndex >= shuffledQuestions.length) {
             setQuizComplete(true)
             return prev
           }
@@ -125,7 +126,7 @@ export function QuizContainer() {
       setTimeout(() => {
         setCurrentQuestionIndex(prev => {
           const nextIndex = prev + 1
-          if (nextIndex >= naturalizationQuestions.length) {
+          if (nextIndex >= shuffledQuestions.length) {
             setQuizComplete(true)
             return prev
           }
@@ -273,9 +274,9 @@ export function QuizContainer() {
       newAnsweredQuestions.add(currentQuestionIndex)
       setAnsweredQuestions(newAnsweredQuestions)
 
-      if (newAnsweredQuestions.size === naturalizationQuestions.length) {
+      if (newAnsweredQuestions.size === shuffledQuestions.length) {
         setQuizComplete(true)
-        textToSpeech(`Quiz complete! Your score is ${score + 1} out of ${naturalizationQuestions.length}.`)
+        textToSpeech(`Quiz complete! Your score is ${score + 1} out of ${shuffledQuestions.length}.`)
       } else {
         moveToNextQuestion()
       }
@@ -285,20 +286,20 @@ export function QuizContainer() {
   }, [currentQuestion, currentQuestionIndex, score, answeredQuestions])
 
   const moveToNextQuestion = useCallback(() => {
-        let nextIndex = (currentQuestionIndex + 1) % naturalizationQuestions.length
+    let nextIndex = (currentQuestionIndex + 1) % shuffledQuestions.length
     while (answeredQuestions.has(nextIndex)) {
-          nextIndex = (nextIndex + 1) % naturalizationQuestions.length
-        }
-        setCurrentQuestionIndex(nextIndex)
-        setFeedback(null)
-        setTranscript("")
+      nextIndex = (nextIndex + 1) % shuffledQuestions.length
+    }
+    setCurrentQuestionIndex(nextIndex)
+    setFeedback(null)
+    setTranscript("")
     setInterimTranscript("")
   }, [currentQuestionIndex, answeredQuestions])
 
   const moveToPreviousQuestion = useCallback(() => {
-    let prevIndex = (currentQuestionIndex - 1 + naturalizationQuestions.length) % naturalizationQuestions.length
+    let prevIndex = (currentQuestionIndex - 1 + shuffledQuestions.length) % shuffledQuestions.length
     while (answeredQuestions.has(prevIndex)) {
-      prevIndex = (prevIndex - 1 + naturalizationQuestions.length) % naturalizationQuestions.length
+      prevIndex = (prevIndex - 1 + shuffledQuestions.length) % shuffledQuestions.length
     }
     setCurrentQuestionIndex(prevIndex)
     setFeedback(null)
@@ -306,17 +307,64 @@ export function QuizContainer() {
     setInterimTranscript("")
   }, [currentQuestionIndex, answeredQuestions])
 
+  const shuffleQuestions = useCallback(() => {
+    const newShuffled = [...naturalizationQuestions]
+    for (let i = newShuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[newShuffled[i], newShuffled[j]] = [newShuffled[j], newShuffled[i]]
+    }
+    setShuffledQuestions(newShuffled)
+    setCurrentQuestionIndex(0)
+    setAnsweredQuestions(new Set())
+    setScore(0)
+    setQuizComplete(false)
+    
+    // Restart speech recognition
+    if (speechService) {
+      speechService.stopListening()
+      speechService.startListening()
+    }
+
+    // Read the first question
+    if (newShuffled[0]) {
+      textToSpeech(newShuffled[0].question)
+    }
+
+    toast({
+      title: "Questions Shuffled",
+      description: "Starting with a new random order...",
+    })
+  }, [speechService, toast])
+
   const resetQuiz = useCallback(() => {
     setCurrentQuestionIndex(0)
-    setIsListening(false)
-    setTranscript("")
-    setInterimTranscript("")
+    setIsListening(true)
     setFeedback(null)
+    setShowFeedback(false)
+    setTranscript('')
+    setInterimTranscript('')
     setQuizComplete(false)
     setScore(0)
     setAnsweredQuestions(new Set())
-    textToSpeech("Quiz has been reset. Good luck!")
-  }, [])
+    setCurrentOptions([])
+    setShuffledQuestions(naturalizationQuestions)
+    
+    // Restart speech recognition
+    if (speechService) {
+      speechService.stopListening()
+      speechService.startListening()
+    }
+
+    // Read the first question
+    if (naturalizationQuestions[0]) {
+      textToSpeech(naturalizationQuestions[0].question)
+    }
+
+    toast({
+      title: "Quiz Reset",
+      description: "Starting from the beginning...",
+    })
+  }, [speechService, toast])
 
   // Generate options when question changes
   useEffect(() => {
@@ -339,12 +387,12 @@ export function QuizContainer() {
       q => q.category === question.category
     )
 
-    // Get all possible answers from the same category
+    // Get all possible answers from the same category, excluding the current question's answers
     const categoryAnswers = categoryQuestions.flatMap(q => 
       Array.isArray(q.answer) ? q.answer : [q.answer]
     ).filter(a => !allAnswers.includes(a))
 
-    // Get all answers from other categories
+    // Get all answers from other categories, excluding the current question's answers
     const otherAnswers = naturalizationQuestions
       .filter(q => q.category !== question.category)
       .flatMap(q => Array.isArray(q.answer) ? q.answer : [q.answer])
@@ -420,6 +468,9 @@ export function QuizContainer() {
         .slice(0, 3)
     }
 
+    // Remove any duplicates from fakeAnswers
+    fakeAnswers = Array.from(new Set(fakeAnswers))
+
     // If we don't have enough category-specific fake answers, supplement with other answers
     if (fakeAnswers.length < 3) {
       const remainingNeeded = 3 - fakeAnswers.length
@@ -436,9 +487,21 @@ export function QuizContainer() {
       fakeAnswers = [...fakeAnswers, ...plausibleAlternatives.slice(0, remainingNeeded)]
     }
 
+    // Remove any duplicates from the final set of fake answers
+    fakeAnswers = Array.from(new Set(fakeAnswers))
+
     // Combine correct and fake answers, then shuffle
     const allOptions = [correctAnswer, ...fakeAnswers]
     return shuffleArray(allOptions)
+  }
+
+  const shuffleArray = (array: string[]) => {
+    const newArray = [...array]
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
+    }
+    return newArray
   }
 
   const generatePlausibleAlternatives = (question: Question, existingAnswers: string[]) => {
@@ -628,17 +691,8 @@ export function QuizContainer() {
     return alternatives.filter(a => !existingAnswers.includes(a))
   }
 
-  const shuffleArray = (array: string[]) => {
-    const newArray = [...array]
-    for (let i = newArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
-    }
-    return newArray
-  }
-
   if (quizComplete) {
-    return <ResultsSummary score={score} totalQuestions={naturalizationQuestions.length} onReset={resetQuiz} />
+    return <ResultsSummary score={score} totalQuestions={shuffledQuestions.length} onReset={resetQuiz} />
   }
 
   return (
@@ -689,6 +743,38 @@ export function QuizContainer() {
                       <li>"Previous" - Go back to previous question</li>
                       <li>"Stop" - Stop listening</li>
                     </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={shuffleQuestions}
+                    >
+                      <Shuffle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Shuffle Questions</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={resetQuiz}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset Quiz</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

@@ -1,0 +1,14 @@
+{
+    "public": "out",
+    "cleanUrls": true,
+    "rewrites": [
+        {
+            "source": "/_next/**",
+            "destination": "/_next/$1"
+        },
+        {
+            "source": "/**",
+            "destination": "/index.html"
+        }
+    ]
+}

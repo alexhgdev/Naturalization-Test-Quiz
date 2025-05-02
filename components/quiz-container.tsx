@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -12,7 +12,10 @@ import { QuestionDisplay } from "@/components/question-display"
 import { ResultsSummary } from "@/components/results-summary"
 import { Question, naturalizationQuestions } from '@/data/questions'
 import { cn } from "@/lib/utils"
-import { SpeechService, textToSpeech } from "@/lib/speech-service"
+import { SpeechService, textToSpeech, VoiceOptions } from "@/lib/speech-service"
+import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MicButton } from "@/components/mic-button"
 
 export function QuizContainer() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -27,152 +30,24 @@ export function QuizContainer() {
   const [speechService, setSpeechService] = useState<SpeechService | null>(null)
   const [currentOptions, setCurrentOptions] = useState<string[]>([])
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(naturalizationQuestions)
+  const [voiceSettings, setVoiceSettings] = useState<VoiceOptions>({
+    voice: "alloy",
+    speed: 1.0,
+    pitch: 1.0
+  })
   const { toast } = useToast()
+  const spokenQuestionsRef = useRef<Set<number>>(new Set())
 
   const currentQuestion = shuffledQuestions[currentQuestionIndex]
   const progress = (answeredQuestions.size / shuffledQuestions.length) * 100
 
-  const handleTranscript = useCallback((text: string) => {
-    setTranscript(text)
-    handleVoiceCommand(text)
-  }, [currentQuestionIndex])
-
-  const handleInterimTranscript = useCallback((text: string) => {
-    setInterimTranscript(text)
-  }, [])
-
-  const handleError = useCallback((error: string) => {
-    toast({
-      variant: "destructive",
-      title: "Speech Recognition Error",
-      description: error,
-    })
-  }, [toast])
-
-  useEffect(() => {
-    const service = new SpeechService(
-      handleTranscript,
-      handleError,
-      handleInterimTranscript
-    )
-    setSpeechService(service)
-
-    if (service.isAvailable()) {
-      service.toggleListening()
-      setIsListening(true)
-      toast({
-        title: "Listening...",
-        description: "Speak your answer or say 'repeat' to hear the question again.",
-      })
-    }
-
-    return () => {
-      service.stopListening()
-    }
-  }, [handleTranscript, handleError, handleInterimTranscript, toast])
-
-  useEffect(() => {
-    if (currentQuestion) {
-      textToSpeech(currentQuestion.question)
-    }
-  }, [currentQuestion])
-
-  const handleVoiceCommand = useCallback((command: string) => {
-    const normalizedCommand = command.toLowerCase().trim()
-
-    if (normalizedCommand.includes("repeat") || normalizedCommand.includes("say again")) {
-      textToSpeech(currentQuestion.question)
-    } else if (normalizedCommand.includes("next") || normalizedCommand.includes("skip")) {
-      moveToNextQuestion()
-    } else if (normalizedCommand.includes("previous") || normalizedCommand.includes("back")) {
-      moveToPreviousQuestion()
-    } else if (normalizedCommand.includes("stop") || normalizedCommand.includes("quit")) {
-      speechService?.stopListening()
-        setIsListening(false)
-    } else if (!normalizedCommand.includes("repeat") && !normalizedCommand.includes("say again")) {
-      checkAnswer(normalizedCommand)
-    }
-  }, [currentQuestion, speechService])
-
-  const handleAnswerSubmit = (answer: string) => {
-    const isCorrect = checkAnswer(answer)
-    setFeedback(isCorrect ? 'correct' : 'incorrect')
-    setShowFeedback(true)
-
-    if (isCorrect) {
-      setTimeout(() => {
-        setCurrentQuestionIndex(prev => {
-          const nextIndex = prev + 1
-          if (nextIndex >= shuffledQuestions.length) {
-            setQuizComplete(true)
-            return prev
-          }
-          return nextIndex
-        })
-        setShowFeedback(false)
-        setFeedback(null)
-        setTranscript('') // Clear transcript when moving to next question
-        setInterimTranscript('') // Clear interim transcript as well
-      }, 1500)
-    }
-  }
-
-  const handleOptionSelect = (selectedAnswer: string) => {
-    const isCorrect = checkAnswer(selectedAnswer)
-    setFeedback(isCorrect ? 'correct' : 'incorrect')
-    setShowFeedback(true)
-
-    if (isCorrect) {
-      setTimeout(() => {
-        setCurrentQuestionIndex(prev => {
-          const nextIndex = prev + 1
-          if (nextIndex >= shuffledQuestions.length) {
-            setQuizComplete(true)
-            return prev
-          }
-          return nextIndex
-        })
-        setShowFeedback(false)
-        setFeedback(null)
-        setTranscript('') // Clear transcript when moving to next question
-        setInterimTranscript('') // Clear interim transcript as well
-      }, 1500)
-    }
-  }
-
-  const toggleListening = useCallback(() => {
-    if (!speechService?.isAvailable()) {
-      toast({
-        variant: "destructive",
-        title: "Speech Recognition Not Available",
-        description: "Your browser doesn't support speech recognition. Please try a different browser.",
-      })
-      return
-    }
-
-    speechService.toggleListening()
-    setIsListening(speechService.getListeningState())
-
-    if (speechService.getListeningState()) {
-      toast({
-        title: "Listening...",
-        description: "Speak your answer or say 'repeat' to hear the question again.",
-      })
-    } else {
-      toast({
-        title: "Microphone Off",
-        description: "Click the microphone to start listening again.",
-      })
-    }
-  }, [speechService, toast])
-
-  // Helper function to normalize text for comparison
-  const normalizeText = (text: string): string => {
-    return text
-      .toLowerCase()
-      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '') // Remove punctuation
-      .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
-      .trim()
+  // Helper function to calculate similarity between strings
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    const normalized1 = str1.toLowerCase().trim()
+    const normalized2 = str2.toLowerCase().trim()
+    const maxLength = Math.max(normalized1.length, normalized2.length)
+    const distance = levenshteinDistance(normalized1, normalized2)
+    return (1 - distance / maxLength) * 100
   }
 
   // Helper function to calculate Levenshtein distance
@@ -201,90 +76,6 @@ export function QuizContainer() {
     return dp[m][n]
   }
 
-  // Helper function to calculate similarity percentage with word-level matching
-  const calculateSimilarity = (str1: string, str2: string): number => {
-    // Normalize both strings
-    const normalized1 = normalizeText(str1)
-    const normalized2 = normalizeText(str2)
-
-    // Split into words
-    const words1 = normalized1.split(' ')
-    const words2 = normalized2.split(' ')
-
-    // Calculate word-level similarity
-    let wordMatches = 0
-    for (const word1 of words1) {
-      for (const word2 of words2) {
-        const distance = levenshteinDistance(word1, word2)
-        const maxLength = Math.max(word1.length, word2.length)
-        const similarity = (1 - distance / maxLength) * 100
-        if (similarity >= 80) { // Word-level similarity threshold
-          wordMatches++
-          break
-        }
-      }
-    }
-
-    // Calculate character-level similarity
-    const charDistance = levenshteinDistance(normalized1, normalized2)
-    const maxLength = Math.max(normalized1.length, normalized2.length)
-    const charSimilarity = (1 - charDistance / maxLength) * 100
-
-    // Combine word and character level similarities
-    const wordSimilarity = (wordMatches / Math.max(words1.length, words2.length)) * 100
-    return (wordSimilarity * 0.6 + charSimilarity * 0.4) // Weighted combination
-  }
-
-  const checkAnswer = useCallback((userAnswer: string) => {
-    const correctAnswers = Array.isArray(currentQuestion.answer)
-      ? currentQuestion.answer.map((a) => a.toLowerCase())
-      : [currentQuestion.answer.toLowerCase()]
-
-    // Calculate similarity scores for all correct answers
-    const similarityScores = correctAnswers.map(correctAnswer => 
-      calculateSimilarity(userAnswer, correctAnswer)
-    )
-
-    // Get the highest similarity score
-    const maxSimilarity = Math.max(...similarityScores)
-
-    // Consider it correct if similarity is above 65%
-    const isCorrect = maxSimilarity >= 65
-
-    // Log the comparison for debugging
-    console.log('Answer comparison:', {
-      userAnswer,
-      correctAnswers,
-      similarityScores,
-      maxSimilarity,
-      isCorrect
-    })
-
-    setFeedback(isCorrect ? "correct" : "incorrect")
-
-    if (isCorrect) {
-      setScore(score + 1)
-      textToSpeech("Correct! Moving to the next question.")
-    } else {
-      textToSpeech(`Incorrect. The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}`)
-    }
-
-    setTimeout(() => {
-      const newAnsweredQuestions = new Set(answeredQuestions)
-      newAnsweredQuestions.add(currentQuestionIndex)
-      setAnsweredQuestions(newAnsweredQuestions)
-
-      if (newAnsweredQuestions.size === shuffledQuestions.length) {
-        setQuizComplete(true)
-        textToSpeech(`Quiz complete! Your score is ${score + 1} out of ${shuffledQuestions.length}.`)
-      } else {
-        moveToNextQuestion()
-      }
-    }, 2000)
-
-    return isCorrect
-  }, [currentQuestion, currentQuestionIndex, score, answeredQuestions])
-
   const moveToNextQuestion = useCallback(() => {
     let nextIndex = (currentQuestionIndex + 1) % shuffledQuestions.length
     while (answeredQuestions.has(nextIndex)) {
@@ -294,7 +85,7 @@ export function QuizContainer() {
     setFeedback(null)
     setTranscript("")
     setInterimTranscript("")
-  }, [currentQuestionIndex, answeredQuestions])
+  }, [currentQuestionIndex, answeredQuestions, shuffledQuestions.length])
 
   const moveToPreviousQuestion = useCallback(() => {
     let prevIndex = (currentQuestionIndex - 1 + shuffledQuestions.length) % shuffledQuestions.length
@@ -305,7 +96,211 @@ export function QuizContainer() {
     setFeedback(null)
     setTranscript("")
     setInterimTranscript("")
-  }, [currentQuestionIndex, answeredQuestions])
+  }, [currentQuestionIndex, answeredQuestions, shuffledQuestions.length])
+
+  const checkAnswer = useCallback((userAnswer: string) => {
+    const normalizedCommand = userAnswer.toLowerCase().trim()
+
+    if (normalizedCommand === "next") {
+      moveToNextQuestion()
+      return
+    }
+
+    const correctAnswers = Array.isArray(currentQuestion.answer)
+      ? currentQuestion.answer.map((a: string) => a.toLowerCase())
+      : [currentQuestion.answer.toLowerCase()]
+
+    const similarityScores = correctAnswers.map((correctAnswer: string) => 
+      calculateSimilarity(normalizedCommand, correctAnswer)
+    )
+
+    const maxSimilarity = Math.max(...similarityScores)
+    const isCorrect = maxSimilarity >= 65
+
+    setFeedback(isCorrect ? "correct" : "incorrect")
+
+    if (isCorrect) {
+      setScore(score + 1)
+      if (speechService) {
+        speechService.speak("Correct! Moving to the next question.", voiceSettings)
+      }
+      setTimeout(() => {
+        const newAnsweredQuestions = new Set(answeredQuestions)
+        newAnsweredQuestions.add(currentQuestionIndex)
+        setAnsweredQuestions(newAnsweredQuestions)
+
+        if (newAnsweredQuestions.size === shuffledQuestions.length) {
+          setQuizComplete(true)
+          if (speechService) {
+            speechService.speak(`Quiz complete! Your score is ${score + 1} out of ${shuffledQuestions.length}.`, voiceSettings)
+          }
+        } else {
+          moveToNextQuestion()
+        }
+      }, 4000)
+    } else {
+      if (speechService) {
+        speechService.speak(`Incorrect. The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}. Would you like to try again? Say "next" to move on.`, voiceSettings)
+      }
+    }
+
+    return isCorrect
+  }, [currentQuestion, currentQuestionIndex, score, answeredQuestions, voiceSettings, speechService, moveToNextQuestion, shuffledQuestions.length])
+
+  const handleVoiceCommand = useCallback((command: string) => {
+    const normalizedCommand = command.toLowerCase().trim()
+
+    if (normalizedCommand.includes("repeat") || normalizedCommand.includes("say again")) {
+      if (speechService) {
+        speechService.speak(currentQuestion.question, voiceSettings)
+      }
+    } else if (normalizedCommand.includes("next") || normalizedCommand.includes("skip")) {
+      moveToNextQuestion()
+    } else if (normalizedCommand.includes("previous") || normalizedCommand.includes("back")) {
+      moveToPreviousQuestion()
+    } else if (!normalizedCommand.includes("repeat") && !normalizedCommand.includes("say again")) {
+      checkAnswer(normalizedCommand)
+    }
+  }, [currentQuestion, speechService, voiceSettings, moveToNextQuestion, moveToPreviousQuestion, checkAnswer])
+
+  const handleTranscript = useCallback((text: string) => {
+    setTranscript(text)
+    handleVoiceCommand(text)
+  }, [currentQuestionIndex])
+
+  const handleInterimTranscript = useCallback((text: string) => {
+    setInterimTranscript(text)
+  }, [])
+
+  const handleError = useCallback((error: string) => {
+    toast({
+      variant: "destructive",
+      title: "Speech Recognition Error",
+      description: error,
+    })
+  }, [toast])
+
+  useEffect(() => {
+    const service = new SpeechService(
+      handleTranscript,
+      handleError,
+      handleInterimTranscript,
+      () => {}, // nextQuestionCallback
+      [] // validChoices
+    )
+    setSpeechService(service)
+
+    // Initialize speech recognition
+    service.setupRecognition()
+
+    if (service.isAvailable()) {
+      service.startListening()
+      setIsListening(true)
+      toast({
+        title: "Listening...",
+        description: "Speak your answer or say 'repeat' to hear the question again.",
+      })
+    }
+
+    return () => {
+      service.stopListening()
+    }
+  }, [handleTranscript, handleError, handleInterimTranscript, toast])
+
+  // Single useEffect to handle both initial mount and question changes
+  useEffect(() => {
+    if (speechService && currentQuestion && !spokenQuestionsRef.current.has(currentQuestionIndex)) {
+      console.debug('Speaking question:', currentQuestion.question)
+      speechService.speak(currentQuestion.question, voiceSettings)
+      spokenQuestionsRef.current.add(currentQuestionIndex)
+    }
+  }, [currentQuestion, speechService, voiceSettings, currentQuestionIndex])
+
+  const handleAnswerSubmit = (answer: string) => {
+    const isCorrect = checkAnswer(answer)
+    setFeedback(isCorrect ? 'correct' : 'incorrect')
+    setShowFeedback(true)
+
+    if (isCorrect) {
+      if (speechService) {
+        speechService.speak("Correct! Moving to the next question.", voiceSettings).then(() => {
+          setTimeout(() => {
+            setCurrentQuestionIndex(prev => {
+              const nextIndex = prev + 1
+              if (nextIndex >= shuffledQuestions.length) {
+                setQuizComplete(true)
+                return prev
+              }
+              return nextIndex
+            })
+            setShowFeedback(false)
+            setFeedback(null)
+            setTranscript('') // Clear transcript when moving to next question
+            setInterimTranscript('') // Clear interim transcript as well
+          }, 500) // Reduced delay since we're already waiting for audio to finish
+        })
+      } else {
+        // If no speech service, just move to next question after a delay
+        setTimeout(() => {
+          setCurrentQuestionIndex(prev => {
+            const nextIndex = prev + 1
+            if (nextIndex >= shuffledQuestions.length) {
+              setQuizComplete(true)
+              return prev
+            }
+            return nextIndex
+          })
+          setShowFeedback(false)
+          setFeedback(null)
+          setTranscript('')
+          setInterimTranscript('')
+        }, 1500)
+      }
+    }
+  }
+
+  const handleOptionSelect = (selectedAnswer: string) => {
+    const isCorrect = checkAnswer(selectedAnswer)
+    setFeedback(isCorrect ? 'correct' : 'incorrect')
+    setShowFeedback(true)
+
+    if (isCorrect) {
+      if (speechService) {
+        speechService.speak("Correct! Moving to the next question.", voiceSettings).then(() => {
+          setTimeout(() => {
+            setCurrentQuestionIndex(prev => {
+              const nextIndex = prev + 1
+              if (nextIndex >= shuffledQuestions.length) {
+                setQuizComplete(true)
+                return prev
+              }
+              return nextIndex
+            })
+            setShowFeedback(false)
+            setFeedback(null)
+            setTranscript('')
+            setInterimTranscript('')
+          }, 500)
+        })
+      } else {
+        // If no speech service, just move to next question after a delay
+        setTimeout(() => {
+          setCurrentQuestionIndex(prev => {
+            const nextIndex = prev + 1
+            if (nextIndex >= shuffledQuestions.length) {
+              setQuizComplete(true)
+              return prev
+            }
+            return nextIndex
+          })
+          setShowFeedback(false)
+          setFeedback(null)
+          setTranscript('')
+          setInterimTranscript('')
+        }, 1500)
+      }
+    }
+  }
 
   const shuffleQuestions = useCallback(() => {
     const newShuffled = [...naturalizationQuestions]
@@ -326,15 +321,15 @@ export function QuizContainer() {
     }
 
     // Read the first question
-    if (newShuffled[0]) {
-      textToSpeech(newShuffled[0].question)
+    if (newShuffled[0] && speechService) {
+      speechService.speak(newShuffled[0].question, voiceSettings)
     }
 
     toast({
       title: "Questions Shuffled",
       description: "Starting with a new random order...",
     })
-  }, [speechService, toast])
+  }, [speechService, toast, voiceSettings])
 
   const resetQuiz = useCallback(() => {
     setCurrentQuestionIndex(0)
@@ -348,23 +343,19 @@ export function QuizContainer() {
     setAnsweredQuestions(new Set())
     setCurrentOptions([])
     setShuffledQuestions(naturalizationQuestions)
+    spokenQuestionsRef.current.clear()
     
-    // Restart speech recognition
     if (speechService) {
-      speechService.stopListening()
       speechService.startListening()
-    }
-
-    // Read the first question
-    if (naturalizationQuestions[0]) {
-      textToSpeech(naturalizationQuestions[0].question)
+      speechService.speak(naturalizationQuestions[0].question, voiceSettings)
+      spokenQuestionsRef.current.add(0)
     }
 
     toast({
       title: "Quiz Reset",
       description: "Starting from the beginning...",
     })
-  }, [speechService, toast])
+  }, [speechService, toast, voiceSettings])
 
   // Generate options when question changes
   useEffect(() => {
@@ -716,10 +707,58 @@ export function QuizContainer() {
                     </SheetDescription>
                   </SheetHeader>
                   <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Voice Settings</h4>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground">Voice</label>
+                          <Select
+                            value={voiceSettings.voice}
+                            onValueChange={(value) => setVoiceSettings(prev => ({ ...prev, voice: value as VoiceOptions["voice"] }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select voice" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="alloy">Alloy</SelectItem>
+                              <SelectItem value="echo">Echo</SelectItem>
+                              <SelectItem value="fable">Fable</SelectItem>
+                              <SelectItem value="onyx">Onyx</SelectItem>
+                              <SelectItem value="nova">Nova</SelectItem>
+                              <SelectItem value="shimmer">Shimmer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground">Speed</label>
+                          <Slider
+                            min={0.5}
+                            max={2}
+                            step={0.1}
+                            value={[voiceSettings.speed || 1.0]}
+                            onValueChange={([value]) => setVoiceSettings(prev => ({ ...prev, speed: value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground">Pitch</label>
+                          <Slider
+                            min={0.5}
+                            max={2}
+                            step={0.1}
+                            value={[voiceSettings.pitch || 1.0]}
+                            onValueChange={([value]) => setVoiceSettings(prev => ({ ...prev, pitch: value }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
-                        onClick={() => textToSpeech(currentQuestion.question)}
+                        onClick={() => {
+                          if (speechService) {
+                            speechService.speak(currentQuestion.question, voiceSettings)
+                          }
+                        }}
                       >
                         <Volume2 className="h-4 w-4 mr-2" />
                         Repeat Question
@@ -741,7 +780,6 @@ export function QuizContainer() {
                       <li>"Repeat" - Hear the question again</li>
                       <li>"Next" - Skip to next question</li>
                       <li>"Previous" - Go back to previous question</li>
-                      <li>"Stop" - Stop listening</li>
                     </ul>
                   </TooltipContent>
                 </Tooltip>
@@ -797,27 +835,25 @@ export function QuizContainer() {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-center">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={toggleListening}
-                    size="lg"
-                    variant={isListening ? "destructive" : "default"}
-                    className={cn(
-                      "h-16 w-16 rounded-full flex items-center justify-center transition-all",
-                    isListening && "animate-pulse"
-                    )}
-                  >
-                    {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                <p>{isListening ? "Click to stop listening" : "Click to start listening"}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        <CardFooter className="flex justify-center space-x-4">
+          {speechService && (
+            <MicButton
+              speechService={speechService}
+              isListening={isListening}
+              onListeningChange={setIsListening}
+            />
+          )}
+          <Button
+            variant="outline"
+            onClick={() => {
+              moveToNextQuestion()
+              if (speechService) {
+                speechService.speak(shuffledQuestions[currentQuestionIndex].question, voiceSettings)
+              }
+            }}
+          >
+            Next Question
+          </Button>
         </CardFooter>
       </Card>
     </div>

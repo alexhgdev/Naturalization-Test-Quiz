@@ -1,31 +1,30 @@
 import { toast } from "@/components/ui/use-toast"
 
 interface SpeechRecognitionEvent extends Event {
-    resultIndex: number
-    results: {
-        [index: number]: {
-            [index: number]: {
-                transcript: string
-            }
-            isFinal: boolean
-        }
-    }
+    results: SpeechRecognitionResultList;
+    resultIndex: number;
+    interpretation: any;
+    emma: any;
 }
 
 interface SpeechRecognitionErrorEvent extends Event {
-    error: string
+    error: string;
+    message: string;
 }
 
 interface SpeechRecognition extends EventTarget {
-    continuous: boolean
-    interimResults: boolean
-    lang: string
-    start: () => void
-    stop: () => void
-    onresult: (event: SpeechRecognitionEvent) => void
-    onend: () => void
-    onerror: (event: SpeechRecognitionErrorEvent) => void
-    onstart: () => void
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    maxAlternatives: number;
+    serviceURI: string;
+    start(): void;
+    stop(): void;
+    abort(): void;
+    onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+    onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
 }
 
 declare global {
@@ -35,175 +34,257 @@ declare global {
     }
 }
 
+export interface VoiceOptions {
+    voice?: string;
+    pitch?: number;
+    rate?: number;
+}
+
+interface QueueItem {
+    text: string;
+    options: VoiceOptions;
+}
+
 export class SpeechService {
-    private recognition: SpeechRecognition | null = null
-    private isListening = false
-    private finalTranscript = ""
-    private interimTranscript = ""
-    private noiseFilterTimeout: NodeJS.Timeout | null = null
+    private recognition: any;
+    private isListening: boolean = false;
+    private shouldBeListening: boolean = false;
+    private currentAudio: HTMLAudioElement | null = null;
+    private audioQueue: { text: string; options: VoiceOptions }[] = [];
+    private isProcessingQueue: boolean = false;
+    private transcriptCallback: (text: string) => void;
+    private errorCallback: (error: string) => void;
+    private interimTranscriptCallback: (text: string) => void;
+    private nextQuestionCallback: () => void;
+    private validChoices: string[];
 
     constructor(
-        private onTranscript: (text: string) => void,
-        private onError: (error: string) => void,
-        private onInterimTranscript: (text: string) => void
+        transcriptCallback: (text: string) => void,
+        errorCallback: (error: string) => void,
+        interimTranscriptCallback: (text: string) => void,
+        nextQuestionCallback: () => void,
+        validChoices: string[] = []
     ) {
-        if (typeof window !== "undefined") {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-            if (SpeechRecognition) {
-                this.recognition = new SpeechRecognition()
-                this.setupRecognition()
-            } else {
-                this.onError("Speech recognition is not supported in this browser. Please use Chrome or Edge.")
-            }
-        }
+        this.transcriptCallback = transcriptCallback;
+        this.errorCallback = errorCallback;
+        this.interimTranscriptCallback = interimTranscriptCallback;
+        this.nextQuestionCallback = nextQuestionCallback;
+        this.validChoices = validChoices;
     }
 
-    private setupRecognition() {
-        if (!this.recognition) return
+    public setupRecognition(): void {
+        if (typeof window !== 'undefined' && 'SpeechRecognition' in window) {
+            this.recognition = new window.SpeechRecognition();
+        } else if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+            this.recognition = new window.webkitSpeechRecognition();
+        }
 
-        // Configure speech recognition settings
-        this.recognition.continuous = true
-        this.recognition.interimResults = true
-        this.recognition.lang = "en-US"
+        if (this.recognition) {
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
 
-        // Lower confidence threshold for better sensitivity
-        const confidenceThreshold = 0.3
+            this.recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
 
-        this.recognition.onresult = (event: SpeechRecognitionEvent) => {
-            let interimTranscript = ""
-            let finalTranscript = ""
-
-            // Handle results using the SpeechRecognitionResultList interface
-            for (let i = event.resultIndex; i < (event.results as any).length; i++) {
-                const result = event.results[i]
-                const transcript = result[0].transcript
-                const confidence = (result[0] as any).confidence || 1.0
-
-                // Process results with lower confidence threshold
-                if (confidence >= confidenceThreshold) {
-                    if (result.isFinal) {
-                        finalTranscript += transcript
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
                     } else {
-                        interimTranscript += transcript
+                        interimTranscript += transcript;
                     }
                 }
-            }
 
-            // Update transcripts
-            if (finalTranscript) {
-                this.finalTranscript = finalTranscript
-                this.onTranscript(finalTranscript)
-            }
-            if (interimTranscript) {
-                this.interimTranscript = interimTranscript
-                this.onInterimTranscript(interimTranscript)
-            }
-        }
-
-        this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-            if (event.error === "no-speech") {
-                // Ignore no-speech errors as they're common during pauses
-                return
-            }
-            if (event.error === "not-allowed") {
-                this.onError("Microphone access was denied. Please allow microphone access and try again.")
-                return
-            }
-            this.onError(`Speech recognition error: ${event.error}`)
-        }
-
-        this.recognition.onend = () => {
-            // Automatically restart if we were listening
-            if (this.isListening) {
-                this.startListening()
-            }
-        }
-
-        // Add noise filtering using existing events
-        this.recognition.onstart = () => {
-            // Clear any existing noise filter timeout
-            if (this.noiseFilterTimeout) {
-                clearTimeout(this.noiseFilterTimeout)
-            }
-        }
-
-        this.recognition.onend = () => {
-            // Add a small delay before processing to filter out background noise
-            this.noiseFilterTimeout = setTimeout(() => {
-                if (this.interimTranscript) {
-                    // Only process if the transcript is meaningful (not just noise)
-                    if (this.interimTranscript.length > 2) {
-                        this.onInterimTranscript(this.interimTranscript)
-                    }
-                    this.interimTranscript = ""
+                if (finalTranscript) {
+                    this.transcriptCallback(finalTranscript);
                 }
-            }, 500)
+                if (interimTranscript) {
+                    this.interimTranscriptCallback(interimTranscript);
+                }
+            };
+
+            this.recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                this.errorCallback(event.error);
+
+                // Handle specific error types
+                switch (event.error) {
+                    case 'no-speech':
+                    case 'audio-capture':
+                    case 'network':
+                        // These errors are recoverable, try to restart
+                        this.reinitializeRecognition();
+                        break;
+                    case 'aborted':
+                        // For aborted errors, wait a bit longer before retrying
+                        setTimeout(() => this.reinitializeRecognition(), 1000);
+                        break;
+                    case 'not-allowed':
+                    case 'service-not-allowed':
+                        // These errors require user intervention
+                        console.error('Speech recognition permission denied');
+                        break;
+                    default:
+                        // For other errors, try to restart after a delay
+                        setTimeout(() => this.reinitializeRecognition(), 1000);
+                }
+            };
+
+            this.recognition.onend = () => {
+                console.debug('Speech recognition ended');
+                this.isListening = false;
+                // Only restart if we're supposed to be listening
+                if (this.shouldBeListening) {
+                    this.reinitializeRecognition();
+                }
+            };
         }
-    }
-
-    public isAvailable(): boolean {
-        return this.recognition !== null
-    }
-
-    public getListeningState(): boolean {
-        return this.isListening
     }
 
     public startListening(): void {
+        if (!this.recognition) {
+            this.setupRecognition();
+        }
+
         if (this.recognition && !this.isListening) {
             try {
-                this.recognition.start()
-                this.isListening = true
+                this.shouldBeListening = true;
+                this.recognition.start();
+                console.debug('Started listening');
             } catch (error) {
-                this.onError("Failed to start speech recognition. Please try again.")
+                console.error('Error starting recognition:', error);
+                this.errorCallback('Failed to start listening');
             }
         }
     }
 
     public stopListening(): void {
-        if (this.recognition && this.isListening) {
+        if (this.recognition) {
             try {
-                this.recognition.stop()
-                this.isListening = false
+                this.shouldBeListening = false;
+                this.recognition.stop();
+                this.isListening = false;
+                console.debug('Stopped listening');
             } catch (error) {
-                this.onError("Failed to stop speech recognition")
+                console.error('Error stopping recognition:', error);
             }
         }
     }
 
-    public toggleListening(): void {
-        if (this.isListening) {
-            this.stopListening()
-        } else {
-            this.startListening()
+    public getListeningState(): boolean {
+        return this.isListening;
+    }
+
+    public async speak(text: string, options?: VoiceOptions): Promise<void> {
+        console.debug('SpeechService.speak() called with:', { text, options });
+
+        // If already playing, queue the text
+        if (this.isProcessingQueue) {
+            console.debug('Already processing queue, queuing text:', text);
+            this.audioQueue.push({ text, options });
+            return;
+        }
+
+        this.isProcessingQueue = true;
+        console.debug('Starting TTS playback for:', text);
+
+        try {
+            const response = await fetch('/api/speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text, options }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            this.currentAudio = audio;
+
+            // Set up event handlers before playing
+            audio.onended = () => {
+                console.debug('TTS playback ended');
+                this.cleanupAudio(audioUrl);
+                this.processQueue();
+            };
+
+            audio.onerror = (error) => {
+                console.error('TTS playback error:', error);
+                this.cleanupAudio(audioUrl);
+                this.processQueue();
+            };
+
+            // Wait for the audio to finish playing
+            await audio.play();
+        } catch (error) {
+            console.error('TTS error:', error);
+            this.cleanupAudio();
+            this.processQueue();
         }
     }
-}
 
-export async function textToSpeech(text: string) {
-    try {
-        const response = await fetch("/api/speech", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ text }),
-        })
+    private cleanupAudio(audioUrl?: string) {
+        if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+        }
+        if (this.currentAudio) {
+            this.currentAudio.pause();
+            this.currentAudio.currentTime = 0;
+            this.currentAudio = null;
+        }
+        this.isProcessingQueue = false;
+    }
 
-        if (!response.ok) {
-            throw new Error("Failed to convert text to speech")
+    private processQueue(): void {
+        if (this.audioQueue.length > 0 && !this.isProcessingQueue) {
+            const next = this.audioQueue.shift();
+            if (next) {
+                this.speak(next.text, next.options);
+            }
+        }
+    }
+
+    private reinitializeRecognition() {
+        if (!this.recognition) {
+            console.debug('Cannot reinitialize: recognition not initialized');
+            return;
         }
 
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
-        await audio.play()
-    } catch (error) {
-        console.error("Error in textToSpeech:", error)
-        toast({
-            variant: "destructive",
-            title: "Text-to-Speech Error",
-            description: "Failed to convert text to speech. Please try again.",
-        })
+        try {
+            // Add a small delay before restarting to prevent rapid cycles
+            setTimeout(() => {
+                try {
+                    if (this.recognition) {
+                        this.recognition.stop();
+                        // Add a small delay before starting again
+                        setTimeout(() => {
+                            try {
+                                if (this.recognition) {
+                                    this.recognition.start();
+                                    console.debug('Recognition restarted after error');
+                                }
+                            } catch (error) {
+                                console.error('Error starting recognition after delay:', error);
+                            }
+                        }, 500);
+                    }
+                } catch (error) {
+                    console.error('Error stopping recognition:', error);
+                }
+            }, 500);
+        } catch (error) {
+            console.error('Error in reinitialization process:', error);
+        }
+    }
+
+    public isAvailable(): boolean {
+        return this.recognition !== null;
     }
 } 

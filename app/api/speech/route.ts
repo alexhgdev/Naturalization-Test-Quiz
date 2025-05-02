@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
+import { VoiceOptions } from "@/lib/speech-service"
 
 // Check if we're in a build environment
 const isBuild = process.env.NEXT_PHASE === "phase-production-build"
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
             apiKey: process.env.OPENAI_API_KEY,
         })
 
-        const { text } = await req.json()
+        const { text, options } = await req.json()
 
         if (!text) {
             return NextResponse.json(
@@ -27,16 +28,24 @@ export async function POST(req: Request) {
             )
         }
 
+        const voiceOptions: VoiceOptions = options || { voice: "alloy" }
+
         const response = await openai.audio.speech.create({
             model: "tts-1",
-            voice: "alloy",
+            voice: voiceOptions.voice,
             input: text,
+            speed: voiceOptions.speed || 1.0,
         })
 
         const audioBuffer = await response.arrayBuffer()
-        const audioBase64 = Buffer.from(audioBuffer).toString("base64")
 
-        return NextResponse.json({ audio: audioBase64 })
+        // Return the audio as a binary stream
+        return new NextResponse(audioBuffer, {
+            headers: {
+                'Content-Type': 'audio/mpeg',
+                'Content-Length': audioBuffer.byteLength.toString(),
+            },
+        })
     } catch (error) {
         console.error("Error generating speech:", error)
         return NextResponse.json(

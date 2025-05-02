@@ -28,7 +28,6 @@ export function QuizContainer() {
   const [score, setScore] = useState(0)
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set())
   const [speechService, setSpeechService] = useState<SpeechService | null>(null)
-  const [currentOptions, setCurrentOptions] = useState<string[]>([])
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(naturalizationQuestions)
   const [voiceSettings, setVoiceSettings] = useState<VoiceOptions>({
     voice: "alloy",
@@ -106,6 +105,19 @@ export function QuizContainer() {
       return
     }
 
+    if (normalizedCommand === "repeat") {
+      if (speechService) {
+        speechService.speak(currentQuestion.question, voiceSettings)
+        // After reading the question, read all correct answers
+        const correctAnswers = Array.isArray(currentQuestion.answer)
+          ? currentQuestion.answer.join(" or ")
+          : currentQuestion.answer
+        speechService.speak(`The correct answer is: ${correctAnswers}`, voiceSettings)
+        speechService.speak("Say 'next' to move to the next question, or 'repeat' to hear this question and answers again.", voiceSettings)
+      }
+      return
+    }
+
     const correctAnswers = Array.isArray(currentQuestion.answer)
       ? currentQuestion.answer.map((a: string) => a.toLowerCase())
       : [currentQuestion.answer.toLowerCase()]
@@ -117,34 +129,44 @@ export function QuizContainer() {
     const maxSimilarity = Math.max(...similarityScores)
     const isCorrect = maxSimilarity >= 65
 
-    setFeedback(isCorrect ? "correct" : "incorrect")
-
     if (isCorrect) {
       setScore(score + 1)
       if (speechService) {
-        speechService.speak("Correct! Moving to the next question.", voiceSettings)
+        speechService.speak("Correct!", voiceSettings)
+        // Read all correct answers
+        const correctAnswersText = Array.isArray(currentQuestion.answer)
+          ? currentQuestion.answer.join(" or ")
+          : currentQuestion.answer
+        speechService.speak(`The correct answer is: ${correctAnswersText}`, voiceSettings)
+        speechService.speak("Say 'next' to move to the next question, or 'repeat' to hear this question and answers again.", voiceSettings)
       }
-      setTimeout(() => {
-        const newAnsweredQuestions = new Set(answeredQuestions)
-        newAnsweredQuestions.add(currentQuestionIndex)
-        setAnsweredQuestions(newAnsweredQuestions)
-
-        if (newAnsweredQuestions.size === shuffledQuestions.length) {
-          setQuizComplete(true)
-          if (speechService) {
-            speechService.speak(`Quiz complete! Your score is ${score + 1} out of ${shuffledQuestions.length}.`, voiceSettings)
-          }
-        } else {
-          moveToNextQuestion()
-        }
-      }, 4000)
     } else {
       if (speechService) {
-        speechService.speak(`Incorrect. The correct answer was: ${Array.isArray(currentQuestion.answer) ? currentQuestion.answer.join(" or ") : currentQuestion.answer}. Would you like to try again? Say "next" to move on.`, voiceSettings)
+        speechService.speak("Incorrect.", voiceSettings)
+        // Read all correct answers
+        const correctAnswersText = Array.isArray(currentQuestion.answer)
+          ? currentQuestion.answer.join(" or ")
+          : currentQuestion.answer
+        speechService.speak(`The correct answer is: ${correctAnswersText}`, voiceSettings)
+        speechService.speak("Say 'next' to move to the next question, or 'repeat' to hear this question and answers again.", voiceSettings)
       }
     }
 
-    return isCorrect
+    setFeedback(isCorrect ? "correct" : "incorrect")
+    setShowFeedback(true)
+
+    if (isCorrect) {
+      const newAnsweredQuestions = new Set(answeredQuestions)
+      newAnsweredQuestions.add(currentQuestionIndex)
+      setAnsweredQuestions(newAnsweredQuestions)
+
+      if (newAnsweredQuestions.size === shuffledQuestions.length) {
+        setQuizComplete(true)
+        if (speechService) {
+          speechService.speak(`Quiz complete! Your score is ${score + 1} out of ${shuffledQuestions.length}.`, voiceSettings)
+        }
+      }
+    }
   }, [currentQuestion, currentQuestionIndex, score, answeredQuestions, voiceSettings, speechService, moveToNextQuestion, shuffledQuestions.length])
 
   const handleVoiceCommand = useCallback((command: string) => {
@@ -153,12 +175,18 @@ export function QuizContainer() {
     if (normalizedCommand.includes("repeat") || normalizedCommand.includes("say again")) {
       if (speechService) {
         speechService.speak(currentQuestion.question, voiceSettings)
+        // After reading the question, read all correct answers
+        const correctAnswers = Array.isArray(currentQuestion.answer)
+          ? currentQuestion.answer.join(" or ")
+          : currentQuestion.answer
+        speechService.speak(`The correct answer is: ${correctAnswers}`, voiceSettings)
+        speechService.speak("Say 'next' to move to the next question, or 'repeat' to hear this question and answers again.", voiceSettings)
       }
     } else if (normalizedCommand.includes("next") || normalizedCommand.includes("skip")) {
       moveToNextQuestion()
     } else if (normalizedCommand.includes("previous") || normalizedCommand.includes("back")) {
       moveToPreviousQuestion()
-    } else if (!normalizedCommand.includes("repeat") && !normalizedCommand.includes("say again")) {
+    } else {
       checkAnswer(normalizedCommand)
     }
   }, [currentQuestion, speechService, voiceSettings, moveToNextQuestion, moveToPreviousQuestion, checkAnswer])
@@ -259,49 +287,6 @@ export function QuizContainer() {
     }
   }
 
-  const handleOptionSelect = (selectedAnswer: string) => {
-    const isCorrect = checkAnswer(selectedAnswer)
-    setFeedback(isCorrect ? 'correct' : 'incorrect')
-    setShowFeedback(true)
-
-    if (isCorrect) {
-      if (speechService) {
-        speechService.speak("Correct! Moving to the next question.", voiceSettings).then(() => {
-          setTimeout(() => {
-            setCurrentQuestionIndex(prev => {
-              const nextIndex = prev + 1
-              if (nextIndex >= shuffledQuestions.length) {
-                setQuizComplete(true)
-                return prev
-              }
-              return nextIndex
-            })
-            setShowFeedback(false)
-            setFeedback(null)
-            setTranscript('')
-            setInterimTranscript('')
-          }, 500)
-        })
-      } else {
-        // If no speech service, just move to next question after a delay
-        setTimeout(() => {
-          setCurrentQuestionIndex(prev => {
-            const nextIndex = prev + 1
-            if (nextIndex >= shuffledQuestions.length) {
-              setQuizComplete(true)
-              return prev
-            }
-            return nextIndex
-          })
-          setShowFeedback(false)
-          setFeedback(null)
-          setTranscript('')
-          setInterimTranscript('')
-        }, 1500)
-      }
-    }
-  }
-
   const shuffleQuestions = useCallback(() => {
     const newShuffled = [...naturalizationQuestions]
     for (let i = newShuffled.length - 1; i > 0; i--) {
@@ -341,7 +326,6 @@ export function QuizContainer() {
     setQuizComplete(false)
     setScore(0)
     setAnsweredQuestions(new Set())
-    setCurrentOptions([])
     setShuffledQuestions(naturalizationQuestions)
     spokenQuestionsRef.current.clear()
     
@@ -356,331 +340,6 @@ export function QuizContainer() {
       description: "Starting from the beginning...",
     })
   }, [speechService, toast, voiceSettings])
-
-  // Generate options when question changes
-  useEffect(() => {
-    const options = generateOptions(currentQuestion)
-    setCurrentOptions(options)
-  }, [currentQuestion])
-
-  const generateOptions = (question: Question) => {
-    const correctAnswer = Array.isArray(question.answer) 
-      ? question.answer[0] 
-      : question.answer
-
-    // Get all possible answers for this question
-    const allAnswers = Array.isArray(question.answer) 
-      ? question.answer 
-      : [question.answer]
-
-    // Get all questions in the same category
-    const categoryQuestions = naturalizationQuestions.filter(
-      q => q.category === question.category
-    )
-
-    // Get all possible answers from the same category, excluding the current question's answers
-    const categoryAnswers = categoryQuestions.flatMap(q => 
-      Array.isArray(q.answer) ? q.answer : [q.answer]
-    ).filter(a => !allAnswers.includes(a))
-
-    // Get all answers from other categories, excluding the current question's answers
-    const otherAnswers = naturalizationQuestions
-      .filter(q => q.category !== question.category)
-      .flatMap(q => Array.isArray(q.answer) ? q.answer : [q.answer])
-      .filter(a => !allAnswers.includes(a))
-
-    // Strategy for generating fake answers based on question type
-    let fakeAnswers: string[] = []
-
-    if (question.category === "Principles of American Democracy") {
-      // For constitutional questions, use similar constitutional concepts
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('constitution') || 
-                    a.toLowerCase().includes('amendment') ||
-                    a.toLowerCase().includes('right'))
-        .slice(0, 3)
-    } else if (question.category === "System of Government") {
-      // For government questions, use other government-related answers
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('government') || 
-                    a.toLowerCase().includes('branch') ||
-                    a.toLowerCase().includes('president') ||
-                    a.toLowerCase().includes('congress'))
-        .slice(0, 3)
-    } else if (question.category === "Rights and Responsibilities") {
-      // For rights questions, use other rights or responsibilities
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('right') || 
-                    a.toLowerCase().includes('responsibility') ||
-                    a.toLowerCase().includes('citizen'))
-        .slice(0, 3)
-    } else if (question.category === "Colonial Period and Independence") {
-      // For historical questions, use other historical events or figures
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('declaration') || 
-                    a.toLowerCase().includes('constitution') ||
-                    a.toLowerCase().includes('war') ||
-                    a.toLowerCase().includes('colony'))
-        .slice(0, 3)
-    } else if (question.category === "1800s") {
-      // For 1800s questions, use other events or figures from that period
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('war') || 
-                    a.toLowerCase().includes('president') ||
-                    a.toLowerCase().includes('slavery'))
-        .slice(0, 3)
-    } else if (question.category === "Recent American History") {
-      // For recent history, use other modern events or figures
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('war') || 
-                    a.toLowerCase().includes('president') ||
-                    a.toLowerCase().includes('movement'))
-        .slice(0, 3)
-    } else if (question.category === "Geography") {
-      // For geography questions, use other geographical locations
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('state') || 
-                    a.toLowerCase().includes('ocean') ||
-                    a.toLowerCase().includes('river') ||
-                    a.toLowerCase().includes('territory'))
-        .slice(0, 3)
-    } else if (question.category === "Symbols") {
-      // For symbols questions, use other national symbols
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('flag') || 
-                    a.toLowerCase().includes('anthem') ||
-                    a.toLowerCase().includes('symbol'))
-        .slice(0, 3)
-    } else if (question.category === "Holidays") {
-      // For holidays questions, use other holidays
-      fakeAnswers = categoryAnswers
-        .filter(a => a.toLowerCase().includes('day') || 
-                    a.toLowerCase().includes('holiday'))
-        .slice(0, 3)
-    }
-
-    // Remove any duplicates from fakeAnswers
-    fakeAnswers = Array.from(new Set(fakeAnswers))
-
-    // If we don't have enough category-specific fake answers, supplement with other answers
-    if (fakeAnswers.length < 3) {
-      const remainingNeeded = 3 - fakeAnswers.length
-      const additionalFakeAnswers = otherAnswers
-        .filter(a => !fakeAnswers.includes(a))
-        .slice(0, remainingNeeded)
-      fakeAnswers = [...fakeAnswers, ...additionalFakeAnswers]
-    }
-
-    // If we still don't have enough answers, create some plausible alternatives
-    if (fakeAnswers.length < 3) {
-      const remainingNeeded = 3 - fakeAnswers.length
-      const plausibleAlternatives = generatePlausibleAlternatives(question, fakeAnswers)
-      fakeAnswers = [...fakeAnswers, ...plausibleAlternatives.slice(0, remainingNeeded)]
-    }
-
-    // Remove any duplicates from the final set of fake answers
-    fakeAnswers = Array.from(new Set(fakeAnswers))
-
-    // Combine correct and fake answers, then shuffle
-    const allOptions = [correctAnswer, ...fakeAnswers]
-    return shuffleArray(allOptions)
-  }
-
-  const shuffleArray = (array: string[]) => {
-    const newArray = [...array]
-    for (let i = newArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
-    }
-    return newArray
-  }
-
-  const generatePlausibleAlternatives = (question: Question, existingAnswers: string[]) => {
-    const alternatives: string[] = []
-    
-    if (question.category === "Principles of American Democracy") {
-      if (question.question.includes("Constitution")) {
-        if (question.question.includes("supreme law")) {
-          alternatives.push(
-            "the Declaration of Independence",
-            "the Articles of Confederation",
-            "the Federalist Papers"
-          )
-        } else if (question.question.includes("amendment")) {
-          alternatives.push(
-            "the original Constitution",
-            "the Articles of Confederation",
-            "the Bill of Rights"
-          )
-        } else if (question.question.includes("first three words")) {
-          alternatives.push(
-            "We the Citizens",
-            "We the People of the United States",
-            "We the Americans"
-          )
-        }
-      } else if (question.question.includes("right") || question.question.includes("freedom")) {
-        alternatives.push(
-          "the right to bear arms",
-          "the right to a fair trial",
-          "the right to privacy"
-        )
-      }
-    } else if (question.category === "System of Government") {
-      if (question.question.includes("branch")) {
-        if (question.question.includes("executive")) {
-          alternatives.push(
-            "the Supreme Court",
-            "the Senate",
-            "the House of Representatives"
-          )
-        } else if (question.question.includes("legislative")) {
-          alternatives.push(
-            "the President",
-            "the Supreme Court",
-            "the Cabinet"
-          )
-        } else if (question.question.includes("judicial")) {
-          alternatives.push(
-            "Congress",
-            "the President",
-            "the Cabinet"
-          )
-        }
-      } else if (question.question.includes("President")) {
-        if (question.question.includes("Commander in Chief")) {
-          alternatives.push(
-            "the Secretary of Defense",
-            "the Chairman of the Joint Chiefs of Staff",
-            "the Secretary of State"
-          )
-        } else if (question.question.includes("Cabinet")) {
-          alternatives.push(
-            "the Supreme Court",
-            "Congress",
-            "the Federal Reserve"
-          )
-        }
-      }
-    } else if (question.category === "Rights and Responsibilities") {
-      if (question.question.includes("vote")) {
-        alternatives.push(
-          "serve on a jury",
-          "pay taxes",
-          "obey the law"
-        )
-      } else if (question.question.includes("citizen")) {
-        alternatives.push(
-          "vote in state elections",
-          "own property",
-          "travel freely"
-        )
-      }
-    } else if (question.category === "Colonial Period and Independence") {
-      if (question.question.includes("Declaration")) {
-        alternatives.push(
-          "the Constitution",
-          "the Articles of Confederation",
-          "the Federalist Papers"
-        )
-      } else if (question.question.includes("colonists")) {
-        alternatives.push(
-          "because of religious persecution",
-          "because of economic opportunity",
-          "because of political freedom"
-        )
-      }
-    } else if (question.category === "1800s") {
-      if (question.question.includes("Civil War")) {
-        alternatives.push(
-          "the Revolutionary War",
-          "the War of 1812",
-          "the Spanish-American War"
-        )
-      } else if (question.question.includes("Lincoln")) {
-        alternatives.push(
-          "George Washington",
-          "Thomas Jefferson",
-          "Andrew Jackson"
-        )
-      }
-    } else if (question.category === "Recent American History") {
-      if (question.question.includes("World War")) {
-        alternatives.push(
-          "the Korean War",
-          "the Vietnam War",
-          "the Gulf War"
-        )
-      } else if (question.question.includes("movement")) {
-        alternatives.push(
-          "the Women's Suffrage Movement",
-          "the Labor Movement",
-          "the Environmental Movement"
-        )
-      }
-    } else if (question.category === "Geography") {
-      if (question.question.includes("ocean")) {
-        alternatives.push(
-          "the Indian Ocean",
-          "the Arctic Ocean",
-          "the Southern Ocean"
-        )
-      } else if (question.question.includes("state")) {
-        if (question.question.includes("Canada")) {
-          alternatives.push(
-            "California",
-            "Texas",
-            "Florida"
-          )
-        } else if (question.question.includes("Mexico")) {
-          alternatives.push(
-            "Alaska",
-            "Hawaii",
-            "Maine"
-          )
-        }
-      } else if (question.question.includes("capital")) {
-        alternatives.push(
-          "New York City",
-          "Los Angeles",
-          "Chicago"
-        )
-      }
-    } else if (question.category === "Symbols") {
-      if (question.question.includes("flag")) {
-        if (question.question.includes("stripes")) {
-          alternatives.push(
-            "because there are 50 states",
-            "because it represents the original 13 colonies",
-            "because it represents the original 13 states"
-          )
-        } else if (question.question.includes("stars")) {
-          alternatives.push(
-            "because there were 13 original colonies",
-            "because it represents the 50 states",
-            "because it represents the 50 territories"
-          )
-        }
-      }
-    } else if (question.category === "Holidays") {
-      if (question.question.includes("Independence Day")) {
-        alternatives.push(
-          "July 1",
-          "July 2",
-          "July 3"
-        )
-      } else if (question.question.includes("national holidays")) {
-        alternatives.push(
-          "Labor Day",
-          "Memorial Day",
-          "Veterans Day"
-        )
-      }
-    }
-
-    // Filter out any alternatives that are already in the existing answers
-    return alternatives.filter(a => !existingAnswers.includes(a))
-  }
 
   if (quizComplete) {
     return <ResultsSummary score={score} totalQuestions={shuffledQuestions.length} onReset={resetQuiz} />
@@ -819,7 +478,7 @@ export function QuizContainer() {
             </div>
           </div>
           <CardDescription>
-            Speak your answers or use voice commands to navigate
+            Speak your answers or use voice commands to navigate. For the best experience, we recommend using headphones.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -830,8 +489,6 @@ export function QuizContainer() {
               feedback={feedback}
               transcript={transcript}
               interimTranscript={interimTranscript}
-              options={currentOptions}
-              onOptionSelect={handleOptionSelect}
             />
           </div>
         </CardContent>

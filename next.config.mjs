@@ -10,7 +10,9 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    serverActions: true
+    serverActions: {
+      allowedOrigins: ['localhost:3000', '192.168.1.126:3000']
+    }
   },
   assetPrefix: ''
 }

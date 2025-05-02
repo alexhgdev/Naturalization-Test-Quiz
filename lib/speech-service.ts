@@ -73,16 +73,74 @@ export class SpeechService {
     }
 
     public setupRecognition(): void {
-        if (typeof window !== 'undefined' && 'SpeechRecognition' in window) {
-            this.recognition = new window.SpeechRecognition();
-        } else if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-            this.recognition = new window.webkitSpeechRecognition();
-        }
-
-        if (this.recognition) {
+        if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+            this.recognition = new (window as any).webkitSpeechRecognition();
             this.recognition.continuous = true;
             this.recognition.interimResults = true;
-            this.recognition.lang = 'en-US';
+            this.recognition.maxAlternatives = 1;
+
+            this.recognition.onstart = () => {
+                this.isListening = true;
+                console.debug('Speech recognition started');
+            };
+
+            this.recognition.onend = () => {
+                this.isListening = false;
+                console.debug('Speech recognition ended');
+
+                // If we should still be listening, restart after a short delay
+                if (this.shouldBeListening) {
+                    setTimeout(() => {
+                        if (this.recognition && !this.isListening) {
+                            try {
+                                this.recognition.start();
+                                console.debug('Restarted speech recognition after end');
+                            } catch (error) {
+                                console.error('Error restarting recognition:', error);
+                            }
+                        }
+                    }, 100);
+                }
+            };
+
+            this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+                console.error('Speech recognition error:', event.error);
+
+                // Handle specific error types
+                switch (event.error) {
+                    case 'no-speech':
+                        // This is a common error when no speech is detected
+                        console.debug('No speech detected, will retry...');
+                        this.errorCallback('No speech detected. Please try speaking again.');
+                        // Don't restart immediately for no-speech errors
+                        break;
+
+                    case 'audio-capture':
+                        this.errorCallback('Could not capture audio. Please check your microphone settings.');
+                        this.reinitializeRecognition();
+                        break;
+
+                    case 'network':
+                        this.errorCallback('Network error occurred. Please check your connection.');
+                        this.reinitializeRecognition();
+                        break;
+
+                    case 'not-allowed':
+                    case 'service-not-allowed':
+                        this.errorCallback('Microphone access denied. Please allow microphone access to use this feature.');
+                        break;
+
+                    case 'aborted':
+                        console.debug('Recognition aborted, will retry...');
+                        this.reinitializeRecognition();
+                        break;
+
+                    default:
+                        console.error('Unknown speech recognition error:', event.error);
+                        this.errorCallback('An error occurred. Please try again.');
+                        this.reinitializeRecognition();
+                }
+            };
 
             this.recognition.onresult = (event) => {
                 let finalTranscript = '';
@@ -104,58 +162,34 @@ export class SpeechService {
                     this.interimTranscriptCallback(interimTranscript);
                 }
             };
-
-            this.recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                this.errorCallback(event.error);
-
-                // Handle specific error types
-                switch (event.error) {
-                    case 'no-speech':
-                    case 'audio-capture':
-                    case 'network':
-                        // These errors are recoverable, try to restart
-                        this.reinitializeRecognition();
-                        break;
-                    case 'aborted':
-                        // For aborted errors, wait a bit longer before retrying
-                        setTimeout(() => this.reinitializeRecognition(), 1000);
-                        break;
-                    case 'not-allowed':
-                    case 'service-not-allowed':
-                        // These errors require user intervention
-                        console.error('Speech recognition permission denied');
-                        break;
-                    default:
-                        // For other errors, try to restart after a delay
-                        setTimeout(() => this.reinitializeRecognition(), 1000);
-                }
-            };
-
-            this.recognition.onend = () => {
-                console.debug('Speech recognition ended');
-                this.isListening = false;
-                // Only restart if we're supposed to be listening
-                if (this.shouldBeListening) {
-                    this.reinitializeRecognition();
-                }
-            };
         }
     }
 
     public startListening(): void {
         if (!this.recognition) {
-            this.setupRecognition();
+            console.warn('Speech recognition not initialized');
+            return;
         }
 
-        if (this.recognition && !this.isListening) {
+        if (this.isListening) {
+            console.debug('Speech recognition already running');
+            return;
+        }
+
+        try {
+            this.shouldBeListening = true;
+            this.recognition.start();
+            console.debug('Started listening');
+        } catch (error) {
+            console.error('Error starting recognition:', error);
+            // If there's an error, try to stop and restart
             try {
-                this.shouldBeListening = true;
-                this.recognition.start();
-                console.debug('Started listening');
-            } catch (error) {
-                console.error('Error starting recognition:', error);
-                this.errorCallback('Failed to start listening');
+                this.recognition.stop();
+                setTimeout(() => {
+                    this.recognition.start();
+                }, 100);
+            } catch (retryError) {
+                console.error('Failed to restart recognition:', retryError);
             }
         }
     }
@@ -251,36 +285,28 @@ export class SpeechService {
         }
     }
 
-    private reinitializeRecognition() {
-        if (!this.recognition) {
-            console.debug('Cannot reinitialize: recognition not initialized');
-            return;
-        }
+    private reinitializeRecognition(): void {
+        if (this.recognition) {
+            try {
+                this.recognition.stop();
+            } catch (error) {
+                console.error('Error stopping recognition:', error);
+            }
 
-        try {
-            // Add a small delay before restarting to prevent rapid cycles
+            // Clear the recognition instance
+            this.recognition = null;
+
+            // Wait a moment before reinitializing
             setTimeout(() => {
-                try {
-                    if (this.recognition) {
-                        this.recognition.stop();
-                        // Add a small delay before starting again
-                        setTimeout(() => {
-                            try {
-                                if (this.recognition) {
-                                    this.recognition.start();
-                                    console.debug('Recognition restarted after error');
-                                }
-                            } catch (error) {
-                                console.error('Error starting recognition after delay:', error);
-                            }
-                        }, 500);
+                this.setupRecognition();
+                if (this.recognition && this.shouldBeListening) {
+                    try {
+                        this.recognition.start();
+                    } catch (error) {
+                        console.error('Error starting recognition after reinitialization:', error);
                     }
-                } catch (error) {
-                    console.error('Error stopping recognition:', error);
                 }
             }, 500);
-        } catch (error) {
-            console.error('Error in reinitialization process:', error);
         }
     }
 
